@@ -1,12 +1,10 @@
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from . import bcrypt
+from . import bcrypt, db
+from .models import User
 
 auth_blueprint = Blueprint('auth', __name__)
-
-# In-memory user store (for demonstration purposes)
-users = {}
 
 @auth_blueprint.route('/signup', methods=['POST'])
 def signup():
@@ -14,11 +12,13 @@ def signup():
     username = data.get('username')
     password = data.get('password')
 
-    if username in users:
+    if User.query.filter_by(username=username).first():
         return jsonify({"msg": "Username already exists"}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    users[username] = {"password": hashed_password}
+    new_user = User(username=username, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
 
     return jsonify({"msg": "User created"}), 201
 
@@ -28,9 +28,9 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    user = users.get(username)
+    user = User.query.filter_by(username=username).first()
 
-    if user and bcrypt.check_password_hash(user['password'], password):
+    if user and bcrypt.check_password_hash(user.password, password):
         access_token = create_access_token(identity=username)
         return jsonify(access_token=access_token)
 

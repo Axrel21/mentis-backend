@@ -6,3 +6,5 @@ Werkzeug
 Flask-Bcrypt
 python-dotenv
 flask-jwt-extended
+flask-sqlalchemy 
+google-generativeai 
